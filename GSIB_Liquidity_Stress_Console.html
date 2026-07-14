@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>G-SIB Liquidity Stress-Testing Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0F1C; --panel:#111B2E; --panel2:#0D1626; --line:#22304A;
+    --text:#E7EAF0; --muted:#8C97AE;
+    --gold:#C9A15A; --teal:#3FA796; --red:#E4572E; --amber:#D9A441; --purple:#8B5CF6;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; padding:32px 24px 60px;}
+  .wrap{max-width:1220px; margin:0 auto;}
+
+  header{border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:24px;
+    display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:14px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.14em; color:var(--gold); text-transform:uppercase; margin-bottom:8px;}
+  h1{font-family:'Fraunces',serif; font-weight:600; font-size:30px; margin:0 0 6px; letter-spacing:-0.01em;}
+  .sub{color:var(--muted); font-size:13px; max-width:640px; line-height:1.55;}
+  .meta{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); text-align:right; line-height:1.7;}
+  .meta b{color:var(--text);}
+
+  .grid{display:grid; grid-template-columns:340px 1fr; gap:16px;}
+  @media(max-width:900px){.grid{grid-template-columns:1fr;}}
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px 22px;}
+  .card h2{font-family:'Fraunces',serif; font-weight:600; font-size:15px; margin:0 0 4px;}
+  .card .desc{color:var(--muted); font-size:12px; margin-bottom:14px; line-height:1.5;}
+
+  .sbtn{font-family:'IBM Plex Mono',monospace; font-size:11.5px; padding:10px 12px; width:100%;
+    background:var(--panel2); border:1px solid var(--line); color:var(--muted);
+    border-radius:7px; cursor:pointer; transition:all .15s; text-align:left; margin-bottom:8px; display:block;}
+  .sbtn:hover{border-color:var(--gold); color:var(--text);}
+  .sbtn.active{background:var(--gold); color:#1A1406; border-color:var(--gold); font-weight:600;}
+  .sbtn .tag{float:right; opacity:0.75; font-size:10px;}
+
+  .slider-block{margin-top:16px; border-top:1px dashed var(--line); padding-top:14px;}
+  .slider-block label{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); display:flex; justify-content:space-between; margin-bottom:4px;}
+  .slider-block label b{color:var(--amber);}
+  input[type=range]{width:100%; accent-color:var(--gold); margin-bottom:12px;}
+
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px;}
+  @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr);}}
+  .stat{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px;}
+  .stat .num{font-family:'Fraunces',serif; font-size:26px; font-weight:600;}
+  .stat .lbl{font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-top:3px;}
+  .stat.bad .num{color:var(--red);} .stat.ok .num{color:var(--teal);} .stat.mid .num{color:var(--amber);}
+
+  .bank-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
+  @media(max-width:1000px){.bank-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:640px){.bank-grid{grid-template-columns:1fr;}}
+  .bank-card{background:var(--panel2); border:1px solid var(--line); border-radius:9px; padding:16px 16px 14px; cursor:pointer; transition:border-color .15s;}
+  .bank-card:hover{border-color:var(--gold);}
+  .bank-card.selected{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold);}
+  .bank-card .bn{font-weight:600; font-size:14px; display:flex; justify-content:space-between; align-items:center;}
+  .bank-card .tk{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--muted);}
+  .lcr-big{font-family:'Fraunces',serif; font-size:30px; font-weight:600; margin:8px 0 2px;}
+  .pill{display:inline-block; padding:2px 9px; border-radius:20px; font-size:10.5px; font-weight:600; font-family:'IBM Plex Mono',monospace;}
+  .pill.pass{background:rgba(63,167,150,0.15); color:var(--teal);}
+  .pill.amber{background:rgba(217,164,65,0.15); color:var(--amber);}
+  .pill.fail{background:rgba(228,87,46,0.15); color:var(--red);}
+  .bar-track{background:#0A1120; border-radius:4px; height:7px; width:100%; overflow:hidden; margin-top:10px; position:relative;}
+  .bar-fill{height:100%; border-radius:4px; transition:width .35s ease, background .35s ease;}
+  .threshold{position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--text); opacity:0.45;}
+  .mini{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--muted); margin-top:8px; line-height:1.7;}
+  .mini b{color:var(--text);}
+
+  .detail{margin-top:16px;}
+  .detail table{width:100%; border-collapse:collapse;}
+  .detail th{font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); text-align:right; padding:7px 8px; border-bottom:1px solid var(--line); font-weight:500;}
+  .detail th:first-child, .detail td:first-child{text-align:left;}
+  .detail td{font-family:'IBM Plex Mono',monospace; font-size:12px; text-align:right; padding:9px 8px; border-bottom:1px solid var(--line);}
+
+  .foot{font-size:11px; color:var(--muted); margin-top:22px; line-height:1.65; border-top:1px solid var(--line); padding-top:16px;}
+  .foot b{color:var(--text);}
+  .disclaimer{background:rgba(228,87,46,0.06); border:1px solid rgba(228,87,46,0.25); border-radius:8px; padding:12px 16px; margin-top:14px; font-size:11px; color:var(--muted); line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <div class="eyebrow">Liquidity Risk &middot; Basel III LCR &middot; Independent Scenario Analysis</div>
+    <h1>G-SIB Liquidity Stress-Testing Console</h1>
+    <div class="sub">Hypothetical scenario analysis of the six U.S. G-SIBs&rsquo; Liquidity Coverage Ratios, built on each bank&rsquo;s own disclosed 1Q26 regulatory figures. Select a scenario or set custom stress levers &mdash; every metric recalculates live.</div>
+  </div>
+  <div class="meta">Base period: <b>1Q26</b> (latest disclosed)<br>Fed Funds (Jul 2026): <b>3.50&ndash;3.75%</b><br>Reg. minimum LCR: <b>100%</b> &middot; Internal amber: <b>110%</b></div>
+</header>
+
+<div class="grid">
+  <div>
+    <div class="card">
+      <h2>Scenario</h2>
+      <div class="desc">Stress applied on top of standardized regulatory assumptions already embedded in disclosed figures.</div>
+      <div id="scenarioBtns"></div>
+      <div class="slider-block">
+        <label>Outflow run-off add-on <b id="roVal">0%</b></label>
+        <input type="range" id="roSlider" min="0" max="200" step="5" value="0">
+        <label>HQLA haircut add-on <b id="hcVal">0%</b></label>
+        <input type="range" id="hcSlider" min="0" max="30" step="1" value="0">
+        <div class="mini">Moving a slider switches to <b>Custom</b> mode. Presets: Moderate = 2022 rate cycle &middot; Severe = 2008 GFC &middot; Idiosyncratic = 2023 SVB-style run.</div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="kpis" id="kpis"></div>
+    <div class="card">
+      <h2>Peer Set &mdash; click a bank for detail</h2>
+      <div class="desc" id="scenarioDesc"></div>
+      <div class="bank-grid" id="bankGrid"></div>
+      <div class="detail" id="detailPanel"></div>
+    </div>
+  </div>
+</div>
+
+<div class="foot">
+  <b>Data sources:</b> JPMorgan Chase 1Q26 10-Q LCR disclosure &middot; Bank of America Q4 2025 Pillar 3 LCR disclosure &middot; Citigroup 1Q26 10-Q &middot; Wells Fargo 1Q26 10-Q (Table 24) &middot; Goldman Sachs Q3 2025 LCR disclosure + 1Q26 10-Q &middot; Morgan Stanley 1Q26 10-Q &mdash; all via SEC EDGAR / company IR. Fed Funds path from FOMC statements and FRED (FEDFUNDS, DFEDTARU).
+  <br><br>
+  <b>Methodology:</b> Stressed LCR = [HQLA &times; (1 &minus; haircut)] &divide; [Net Outflows &times; (1 + run-off add-on)]. Survival horizon = Stressed HQLA &divide; (Stressed Outflows / 30 days). Excess/(shortfall) = Stressed HQLA &minus; Stressed Outflows.
+  <div class="disclaimer">
+    <b>Disclaimer:</b> This is an independent, educational scenario-analysis tool built entirely from public regulatory disclosures. Stress parameters are the author's own illustrative calibrations benchmarked to historical episodes &mdash; they are <b>not</b> official Federal Reserve CCAR/DFAST assumptions, and results under stress scenarios are hypothetical simulations, <b>not</b> statements about any institution's actual financial condition, safety, or soundness. All six banks currently exceed regulatory liquidity minimums as disclosed. Not investment advice. Not affiliated with or endorsed by any institution named.
+  </div>
+</div>
+
+</div>
+
+<script>
+const banks = [
+  {name:"JPMorgan Chase", ticker:"JPM", hqla:942.4, outflows:844.9, note:"Largest absolute HQLA buffer in the peer set; outflow base scales with its deposit franchise."},
+  {name:"Bank of America", ticker:"BAC", hqla:666.8, outflows:595.2, note:"Deposit-heavy funding mix; LCR managed tightly near the peer floor."},
+  {name:"Citigroup", ticker:"C", hqla:613.9, outflows:538.5, note:"Globally distributed HQLA; transferability restrictions apply across legal entities."},
+  {name:"Wells Fargo", ticker:"WFC", hqla:403.2, outflows:335.5, note:"Retail-weighted deposit base; steady 119\u2013125% LCR through the cycle."},
+  {name:"Goldman Sachs", ticker:"GS", hqla:494.0, outflows:386.0, note:"Wholesale-funded model; runs among the highest LCRs of U.S. G-SIBs."},
+  {name:"Morgan Stanley", ticker:"MS", hqla:395.1, outflows:303.9, note:"Highest LCR in the peer set; wealth-management deposits add stability."},
+];
+
+const presets = {
+  baseline:{label:"S0 \u00b7 Baseline", tag:"as disclosed", ro:0, hc:0,
+    desc:"As-disclosed regulatory LCR. Standardized Basel III run-off and haircut assumptions only \u2014 no additional stress."},
+  moderate:{label:"S1 \u00b7 Moderate", tag:"2022 cycle", ro:20, hc:5,
+    desc:"Rate-cycle stress: renewed Fed hikes accelerate deposit migration and raise deposit betas; mild HQLA repricing. Outflows +20%, HQLA \u22125%."},
+  severe:{label:"S2 \u00b7 Severe", tag:"2008 GFC", ro:60, hc:15,
+    desc:"Systemic freeze: wholesale funding markets close, committed lines drawn, bid-ask widens even on Level 1 assets. Outflows +60%, HQLA \u221215%."},
+  idio:{label:"S3 \u00b7 Idiosyncratic", tag:"2023 SVB", ro:150, hc:10,
+    desc:"Bank-specific confidence shock: digital deposit run concentrated in uninsured balances over days. Outflows +150%, HQLA \u221210%."},
+};
+
+let mode = "baseline";
+let ro = 0, hc = 0;
+let selected = 0;
+
+const $ = id => document.getElementById(id);
+
+function calc(b){
+  const sh = b.hqla * (1 - hc/100);
+  const so = b.outflows * (1 + ro/100);
+  const lcr = sh/so*100;
+  const surv = sh/(so/30);
+  const excess = sh - so;
+  const status = lcr>=110 ? {cls:"pass",label:"PASS"} : lcr>=100 ? {cls:"amber",label:"AMBER"} : {cls:"fail",label:"BREACH"};
+  return {sh,so,lcr,surv,excess,status};
+}
+
+function renderButtons(){
+  const el = $("scenarioBtns"); el.innerHTML="";
+  Object.keys(presets).forEach(k=>{
+    const p = presets[k];
+    const b = document.createElement("button");
+    b.className = "sbtn"+(mode===k?" active":"");
+    b.innerHTML = p.label + `<span class="tag">${p.tag}</span>`;
+    b.onclick = ()=>{ mode=k; ro=p.ro; hc=p.hc; $("roSlider").value=ro; $("hcSlider").value=hc; render(); };
+    el.appendChild(b);
+  });
+  if(mode==="custom"){
+    const b = document.createElement("button");
+    b.className = "sbtn active";
+    b.innerHTML = "Custom" + `<span class="tag">your levers</span>`;
+    el.appendChild(b);
+  }
+}
+
+function render(){
+  renderButtons();
+  $("roVal").textContent = "+"+ro+"%";
+  $("hcVal").textContent = "+"+hc+"%";
+  $("scenarioDesc").textContent = mode==="custom"
+    ? `Custom stress: outflows +${ro}%, HQLA haircut +${hc}%.`
+    : presets[mode].desc;
+
+  let breaches=0, ambers=0, minLcr=1e9, minTk="", minSurv=1e9;
+  const grid = $("bankGrid"); grid.innerHTML="";
+  banks.forEach((b,i)=>{
+    const r = calc(b);
+    if(r.status.cls==="fail") breaches++;
+    if(r.status.cls==="amber") ambers++;
+    if(r.lcr<minLcr){minLcr=r.lcr; minTk=b.ticker;}
+    if(r.surv<minSurv) minSurv=r.surv;
+
+    const col = r.status.cls==="pass" ? "var(--teal)" : r.status.cls==="amber" ? "var(--amber)" : "var(--red)";
+    const w = Math.min(r.lcr/1.6,100);
+    const card = document.createElement("div");
+    card.className = "bank-card"+(i===selected?" selected":"");
+    card.onclick = ()=>{selected=i; render();};
+    card.innerHTML = `
+      <div class="bn">${b.ticker} <span class="pill ${r.status.cls}">${r.status.label}</span></div>
+      <div class="tk">${b.name}</div>
+      <div class="lcr-big" style="color:${col}">${r.lcr.toFixed(0)}%</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${w}%; background:${col};"></div><div class="threshold" style="left:${100/1.6}%;"></div></div>
+      <div class="mini">Survival: <b>${r.surv.toFixed(0)} days</b> &middot; ${r.excess>=0?"Excess":"Shortfall"}: <b>$${Math.abs(r.excess).toFixed(0)}B</b></div>
+    `;
+    grid.appendChild(card);
+  });
+
+  $("kpis").innerHTML = `
+    <div class="stat ${breaches>0?'bad':'ok'}"><div class="num">${breaches}</div><div class="lbl">Breaches (&lt;100%)</div></div>
+    <div class="stat ${ambers>0?'mid':'ok'}"><div class="num">${ambers}</div><div class="lbl">Amber (100&ndash;110%)</div></div>
+    <div class="stat"><div class="num">${minLcr.toFixed(0)}%</div><div class="lbl">Weakest LCR &mdash; ${minTk}</div></div>
+    <div class="stat ${minSurv<30?'bad':'ok'}"><div class="num">${minSurv.toFixed(0)}d</div><div class="lbl">Shortest Survival Horizon</div></div>
+  `;
+
+  const b = banks[selected]; const r = calc(b);
+  $("detailPanel").innerHTML = `
+    <h2 style="font-family:'Fraunces',serif;font-size:15px;margin:18px 0 4px;">${b.name} &mdash; detail</h2>
+    <div class="desc">${b.note}</div>
+    <table>
+      <thead><tr><th>Metric</th><th>Base (disclosed)</th><th>Stressed</th><th>&Delta;</th></tr></thead>
+      <tbody>
+        <tr><td>HQLA ($B)</td><td>${b.hqla.toFixed(1)}</td><td>${r.sh.toFixed(1)}</td><td>${(r.sh-b.hqla).toFixed(1)}</td></tr>
+        <tr><td>Net 30-day outflows ($B)</td><td>${b.outflows.toFixed(1)}</td><td>${r.so.toFixed(1)}</td><td>+${(r.so-b.outflows).toFixed(1)}</td></tr>
+        <tr><td>LCR</td><td>${(b.hqla/b.outflows*100).toFixed(1)}%</td><td><b>${r.lcr.toFixed(1)}%</b></td><td>${(r.lcr-b.hqla/b.outflows*100).toFixed(1)}pp</td></tr>
+        <tr><td>Excess / (shortfall) ($B)</td><td>${(b.hqla-b.outflows).toFixed(1)}</td><td>${r.excess.toFixed(1)}</td><td>${(r.excess-(b.hqla-b.outflows)).toFixed(1)}</td></tr>
+        <tr><td>Survival horizon (days)</td><td>${(b.hqla/(b.outflows/30)).toFixed(0)}</td><td><b>${r.surv.toFixed(0)}</b></td><td>${(r.surv-b.hqla/(b.outflows/30)).toFixed(0)}</td></tr>
+      </tbody>
+    </table>
+  `;
+}
+
+$("roSlider").oninput = e=>{ ro=+e.target.value; mode="custom"; render(); };
+$("hcSlider").oninput = e=>{ hc=+e.target.value; mode="custom"; render(); };
+
+render();
+</script>
+</body>
+</html>
