@@ -187,6 +187,6 @@ This is an independent, educational scenario-analysis project built entirely fro
 
 **Maitrayee Vishnu** — MS Finance candidate, Stevens Institute of Technology · ex-FP&A Associate, JPMorgan Chase (CIB)
 
-[LinkedIn](https://www.linkedin.com/in/maitrayee-vishnu) · [Portfolio](https://maitrayee196.github.io/Maitrayee_Portfolio/) · [GitHub](https://github.com/maitrayee196)
+[LinkedIn](https://www.linkedin.com/in/maitrayee-vishnu) · [Portfolio](https://maitrayee196.github.io/Maitrayee_Anand_Vishnu_Portfolio/) · [GitHub](https://github.com/maitrayee196)
 
 *Questions, feedback, or ideas for extending the model? Open an issue or reach out.*
